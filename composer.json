@@ -1,0 +1,21 @@
+{
+    "name": "mmenozzi/m2cpb",
+    "description": "Magento2 Component Package Builder",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Manuele Menozzi",
+            "email": "manuele.menozzi@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "files": [
+            "src/Magento2ComponentPackageBuilder.php"
+        ]
+    },
+    "bin": [
+        "bin/m2cpb"
+    ]
+}

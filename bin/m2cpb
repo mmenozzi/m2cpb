@@ -1,0 +1,36 @@
+#!/usr/bin/env php
+<?php
+
+$searchPaths = array(
+    __DIR__ . '/../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/vendor/autoload.php'
+);
+
+$autoloader = null;
+foreach ($searchPaths as $file) {
+    if (file_exists($file)) {
+        $autoloader = $file;
+        break;
+    }
+}
+
+if (!$autoloader) {
+    fwrite(
+        STDERR,
+        'You need to set up the project dependencies using the following commands:' . PHP_EOL .
+        'wget http://getcomposer.org/composer.phar' . PHP_EOL .
+        'php composer.phar install' . PHP_EOL
+    );
+    die(1);
+}
+
+require_once $autoloader;
+
+$builder = new Magento2ComponentPackageBuilder();
+if (empty($argv[1]) || empty($argv[2])) {
+    echo $builder->usage();
+    exit(1);
+}
+
+exit($builder->build($argv[1], $argv[2]));
