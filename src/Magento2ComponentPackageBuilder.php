@@ -24,8 +24,11 @@ class Magento2ComponentPackageBuilder
     public function build($sourcePath, $sourceComposerJsonPath, $destinationZipPath)
     {
         $this->validateSourcePath($sourcePath);
+        $sourcePath = realpath($sourcePath);
         $sourceComposerData = $this->validateSourceCompoerFile($sourceComposerJsonPath);
+        $sourceComposerJsonPath = realpath($sourceComposerJsonPath);
         $this->validateDestinationZipPath($destinationZipPath);
+        $destinationZipPath = realpath($destinationZipPath);
         $buildDirectory = $this->prepareBuildDirectory($sourcePath);
         $destinationComposerData = $this->getDestinationComposerData($sourceComposerData);
         $this->remapAutoload($sourcePath, $sourceComposerJsonPath, $destinationComposerData);
