@@ -15,12 +15,17 @@ class Magento2ComponentPackageBuilder
      *  Path to the original composer.json file used during development. The following properties must be set: name,
      *  version, type, license, authors and autoload.
      *
+     * @param $destinationZipPath
+     *  Path to the destination directory of the ZIP package file. The file name of the ZIP package is automatically
+     *  generated using the Composer's package name and version.
+     *
      * @return int
      */
-    public function build($sourcePath, $sourceComposerJsonPath)
+    public function build($sourcePath, $sourceComposerJsonPath, $destinationZipPath)
     {
         $this->validateSourcePath($sourcePath);
         $sourceComposerData = $this->validateSourceCompoerFile($sourceComposerJsonPath);
+        $this->validateDestinationZipPath($destinationZipPath);
         $buildDirectory = $this->prepareBuildDirectory($sourcePath);
         $destinationComposerData = $this->getDestinationComposerData($sourceComposerData);
         $this->remapAutoload($sourcePath, $sourceComposerJsonPath, $destinationComposerData);
@@ -29,8 +34,7 @@ class Magento2ComponentPackageBuilder
         $packageName = $destinationComposerData->name;
         $version = $destinationComposerData->version;
 
-        $zipFilename = str_replace(DIRECTORY_SEPARATOR, '-', $packageName) . '-' . $version . '.zip';
-        $zipFilePath = dirname($sourceComposerJsonPath) . DIRECTORY_SEPARATOR . $zipFilename;
+        $zipFilePath = $destinationZipPath . DIRECTORY_SEPARATOR . $this->generateZipFilename($packageName, $version);
         $this->zipDir($buildDirectory, $zipFilePath);
 
         echo sprintf('Package successfully built in "%s"!', $zipFilePath) . PHP_EOL;
@@ -44,13 +48,16 @@ class Magento2ComponentPackageBuilder
 Magento2 Component Package Builder
 Builds a ZIP package of a Magento2 component (module, theme, language or library).
     
-Usage: m2cpb <src_path> <composer_file_path>
+Usage: m2cpb <src_path> <composer_file_path> <destination_zip_path>
 
     <src_path>              Path to the root directory of the component (the one which contains the registration.php
                             file).
     
     <composer_file_path>    Path to the original composer.json file used during development. The following properties
                             must be set: name, version, type, license, authors and autoload.
+                            
+    <destination_zip_path>  Path to the destination directory of the ZIP package file. The file name of the ZIP package
+                            is automatically generated using the Composer's package name and version.
 
 USAGE;
     }
@@ -212,5 +219,27 @@ USAGE;
             $buildDirectory . DIRECTORY_SEPARATOR . 'composer.json',
             json_encode($destinationComposerData, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
         );
+    }
+
+    /**
+     * @param $destinationZipPath
+     */
+    private function validateDestinationZipPath($destinationZipPath)
+    {
+        if (!is_dir($destinationZipPath) || !is_writable($destinationZipPath)) {
+            throw new \RuntimeException(
+                sprintf('Given ZIP destination path "%s" is not a directory or is not writable.', $destinationZipPath)
+            );
+        }
+    }
+
+    /**
+     * @param $packageName
+     * @param $version
+     * @return string
+     */
+    private function generateZipFilename($packageName, $version)
+    {
+        return str_replace(DIRECTORY_SEPARATOR, '-', $packageName) . '-' . $version . '.zip';
     }
 }

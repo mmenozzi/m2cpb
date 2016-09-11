@@ -2,9 +2,11 @@
 <?php
 
 $searchPaths = array(
+    __DIR__ . '/../../../autoload.php',
     __DIR__ . '/../../autoload.php',
+    __DIR__ . '/../autoload.php',
     __DIR__ . '/../vendor/autoload.php',
-    __DIR__ . '/vendor/autoload.php'
+    __DIR__ . '/vendor/autoload.php',
 );
 
 $autoloader = null;
@@ -28,9 +30,9 @@ if (!$autoloader) {
 require_once $autoloader;
 
 $builder = new Magento2ComponentPackageBuilder();
-if (empty($argv[1]) || empty($argv[2])) {
+if (empty($argv[1]) || empty($argv[2]) || empty($argv[3])) {
     echo $builder->usage();
     exit(1);
 }
 
-exit($builder->build($argv[1], $argv[2]));
+exit($builder->build($argv[1], $argv[2], $argv[3]));
