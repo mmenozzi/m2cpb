@@ -6,6 +6,16 @@ class Magento2ComponentPackageBuilder
     const TEMP_BUILD_DIR_PREFIX = 'm2cpb_';
 
     /**
+     * @var OutputInterface
+     */
+    private $output;
+
+    public function __construct(OutputInterface $output)
+    {
+        $this->output = $output;
+    }
+
+    /**
      * Builds a ZIP package of a Magento2 component (module, theme, language or library).
      *
      * @param string $sourcePath
@@ -40,7 +50,7 @@ class Magento2ComponentPackageBuilder
         $zipFilePath = $destinationZipPath . DIRECTORY_SEPARATOR . $this->generateZipFilename($packageName, $version);
         $this->zipDir($buildDirectory, $zipFilePath);
 
-        echo sprintf('Package successfully built in "%s"!', $zipFilePath) . PHP_EOL;
+        $this->output->writeln(sprintf('Package successfully built in "%s"!', $zipFilePath));
 
         return 0;
     }

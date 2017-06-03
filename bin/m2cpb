@@ -29,7 +29,7 @@ if (!$autoloader) {
 
 require_once $autoloader;
 
-$builder = new Magento2ComponentPackageBuilder();
+$builder = new Magento2ComponentPackageBuilder(new Output());
 if (empty($argv[1]) || empty($argv[2]) || empty($argv[3])) {
     echo $builder->usage();
     exit(1);
