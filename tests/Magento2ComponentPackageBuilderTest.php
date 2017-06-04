@@ -39,5 +39,55 @@ class Magento2ComponentPackageBuilderTest extends \PHPUnit\Framework\TestCase
         $this->assertEmpty($composerData['autoload']['psr-4']['Awesome\\Module\\']);
     }
 
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Source path "/invalid/path" is not a directory or is not readable.
+     */
+    public function testBuildMarkeplacePackageShouldFailIfSourcePathDoesNotExists()
+    {
+        $this->builder->build(
+            '/invalid/path',
+            __DIR__ . '/fixtures/awesome-module-repo/composer.json',
+            $this->destinationZipPath
+        );
+    }
 
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessageRegExp  /Cannot find Magento2 component registration file at path/
+     */
+    public function testBuildMarketplacePackageShouldFailIfSourcePathDoesNotContainRegistrationFile()
+    {
+        $this->builder->build(
+            __DIR__ . '/fixtures/dir-without-registration-file',
+            __DIR__ . '/fixtures/awesome-module-repo/composer.json',
+            $this->destinationZipPath
+        );
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessageRegExp  /Cannot decode source Composer file at path/
+     */
+    public function testBuildMarketplacePackageShouldFailIfSourceComposerIsNotValidJson()
+    {
+        $this->builder->build(
+            __DIR__ . '/fixtures/awesome-module-repo/src',
+            __DIR__ . '/fixtures/dir-with-invalid-composer-file/composer.json',
+            $this->destinationZipPath
+        );
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessageRegExp  /Cannot find required property "version" in source Composer file at path /
+     */
+    public function testBuildMarketplacePackageShouldFailIfSourceComposerDoesNotContainRequiredProperty()
+    {
+        $this->builder->build(
+            __DIR__ . '/fixtures/awesome-module-repo/src',
+            __DIR__ . '/fixtures/dir-with-incomplete-composer-file/composer.json',
+            $this->destinationZipPath
+        );
+    }
 }
