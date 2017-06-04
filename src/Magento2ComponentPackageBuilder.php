@@ -30,12 +30,13 @@ class Magento2ComponentPackageBuilder
      *  generated using the Composer's package name and version.
      *
      * @return int
+     * @throws \RuntimeException
      */
     public function build($sourcePath, $sourceComposerJsonPath, $destinationZipPath)
     {
         $this->validateSourcePath($sourcePath);
         $sourcePath = realpath($sourcePath);
-        $sourceComposerData = $this->validateSourceCompoerFile($sourceComposerJsonPath);
+        $sourceComposerData = $this->validateSourceComposerFile($sourceComposerJsonPath);
         $sourceComposerJsonPath = realpath($sourceComposerJsonPath);
         $this->validateDestinationZipPath($destinationZipPath);
         $destinationZipPath = realpath($destinationZipPath);
@@ -80,9 +81,11 @@ USAGE;
         if (is_link($src)) {
             symlink(readlink($src), $dst);
         } elseif (is_dir($src)) {
-            mkdir($dst);
+            if (!@mkdir($dst) && !is_dir($dst)) {
+                throw new \RuntimeException(sprintf('Cannot create directory "%s".', $dst));
+            }
             foreach (scandir($src) as $file) {
-                if ($file != '.' && $file != '..') {
+                if ($file !== '.' && $file !== '..') {
                     $this->copyDir("$src/$file", "$dst/$file");
                 }
             }
@@ -129,6 +132,7 @@ USAGE;
 
     /**
      * @param $sourcePath
+     * @throws \RuntimeException
      */
     private function validateSourcePath($sourcePath)
     {
@@ -148,10 +152,11 @@ USAGE;
     /**
      * @param $sourceComposerJsonPath
      * @return mixed
+     * @throws \RuntimeException
      */
-    private function validateSourceCompoerFile($sourceComposerJsonPath)
+    private function validateSourceComposerFile($sourceComposerJsonPath)
     {
-        if (is_null($composerData = json_decode(file_get_contents($sourceComposerJsonPath)))) {
+        if (null === $composerData = json_decode(file_get_contents($sourceComposerJsonPath))) {
             throw new \RuntimeException(
                 sprintf('Cannot decode source Composer file at path "%s".', $sourceComposerJsonPath)
             );
@@ -177,7 +182,7 @@ USAGE;
      */
     private function prepareBuildDirectory($sourcePath)
     {
-        $buildDirectory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid(self::TEMP_BUILD_DIR_PREFIX);
+        $buildDirectory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid(self::TEMP_BUILD_DIR_PREFIX, true);
         $this->copyDir($sourcePath, $buildDirectory);
         return $buildDirectory;
     }
@@ -213,7 +218,7 @@ USAGE;
     {
         $autoloadRemapPath = trim(str_replace(dirname($sourceComposerJsonPath), '', $sourcePath), DIRECTORY_SEPARATOR);
         if (!empty($autoloadRemapPath)) {
-            $autoloadRemapPath = $autoloadRemapPath . DIRECTORY_SEPARATOR;
+            $autoloadRemapPath .= DIRECTORY_SEPARATOR;
             foreach ($destinationComposerData->autoload as &$rules) {
                 foreach ($rules as &$rulePath) {
                     $rulePath = str_replace($autoloadRemapPath, '', $rulePath);
@@ -236,6 +241,7 @@ USAGE;
 
     /**
      * @param $destinationZipPath
+     * @throws \RuntimeException
      */
     private function validateDestinationZipPath($destinationZipPath)
     {
