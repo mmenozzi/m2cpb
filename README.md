@@ -1,7 +1,10 @@
 Magento2 Component Package Builder
 ==================================
 
-Builds a ZIP package of a Magento2 component (module, theme, language or library).
+Builds two ZIP packages of a Magento2 component (module, theme, language or library):
+
+* Magento Marketplace package, ready to be submitted to Magento Marketplace for approval
+* Standalone package, ready to be uploaded into the root of a Magento installation
 
 Installation
 ------------
