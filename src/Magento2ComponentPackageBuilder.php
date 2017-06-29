@@ -40,18 +40,9 @@ class Magento2ComponentPackageBuilder
         $sourceComposerJsonPath = realpath($sourceComposerJsonPath);
         $this->validateDestinationZipPath($destinationZipPath);
         $destinationZipPath = realpath($destinationZipPath);
-        $buildDirectory = $this->prepareBuildDirectory($sourcePath);
-        $destinationComposerData = $this->getDestinationComposerData($sourceComposerData);
-        $this->remapAutoload($sourcePath, $sourceComposerJsonPath, $destinationComposerData);
-        $this->deployDestinationComposerFile($buildDirectory, $destinationComposerData);
 
-        $packageName = $destinationComposerData->name;
-        $version = $destinationComposerData->version;
-
-        $zipFilePath = $destinationZipPath . DIRECTORY_SEPARATOR . $this->generateZipFilename($packageName, $version);
-        $this->zipDir($buildDirectory, $zipFilePath);
-
-        $this->output->writeln(sprintf('Package successfully built in "%s"!', $zipFilePath));
+        $this->createMarketplacePackage($sourcePath, $sourceComposerJsonPath, $sourceComposerData, $destinationZipPath);
+        $this->createStandalonePackage($sourcePath, $destinationZipPath, $sourceComposerData);
 
         return 0;
     }
@@ -173,17 +164,28 @@ USAGE;
                 );
             }
         }
+        if (!isset($composerData->autoload->{'psr-4'}) || count((array)$composerData->autoload->{'psr-4'}) !== 1) {
+            throw new \RuntimeException(
+                sprintf(
+                    'PSR-4 autoload property in source Composer file at path "%s" must be set must contain ' .
+                    'exactly one element.',
+                    $sourceComposerJsonPath
+                )
+            );
+        }
         return $composerData;
     }
 
     /**
-     * @param $sourcePath
      * @return string
+     * @throws \RuntimeException
      */
-    private function prepareBuildDirectory($sourcePath)
+    private function prepareBuildDirectory()
     {
         $buildDirectory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid(self::TEMP_BUILD_DIR_PREFIX, true);
-        $this->copyDir($sourcePath, $buildDirectory);
+        if (!@mkdir($buildDirectory, 0777, true) && !is_dir($buildDirectory)) {
+            throw new \RuntimeException(sprintf('Cannot create build directory "%s".', $buildDirectory));
+        }
         return $buildDirectory;
     }
 
@@ -253,12 +255,89 @@ USAGE;
     }
 
     /**
-     * @param $packageName
-     * @param $version
+     * @param string $packageName
+     * @param string $version
+     * @param string $type
      * @return string
      */
-    private function generateZipFilename($packageName, $version)
+    private function generateZipFilename($packageName, $version, $type)
     {
-        return str_replace(DIRECTORY_SEPARATOR, '-', $packageName) . '-' . $version . '.zip';
+        return sprintf('%s-%s-%s.zip', str_replace(DIRECTORY_SEPARATOR, '-', $packageName), $version, $type);
+    }
+
+    /**
+     * @param $sourcePath
+     * @param $sourceComposerJsonPath
+     * @param $sourceComposerData
+     * @param $destinationZipPath
+     */
+    private function createMarketplacePackage(
+        $sourcePath,
+        $sourceComposerJsonPath,
+        $sourceComposerData,
+        $destinationZipPath
+    ) {
+        $buildDirectory = $this->prepareBuildDirectory();
+        $this->copyDir($sourcePath, $buildDirectory);
+        $destinationComposerData = $this->getDestinationComposerData($sourceComposerData);
+        $this->remapAutoload($sourcePath, $sourceComposerJsonPath, $destinationComposerData);
+        $this->deployDestinationComposerFile($buildDirectory, $destinationComposerData);
+
+        $packageName = $destinationComposerData->name;
+        $version = $destinationComposerData->version;
+
+        $zipFilePath = rtrim($destinationZipPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $zipFilePath .= $this->generateZipFilename($packageName, $version, 'marketplace');
+        $this->zipDir($buildDirectory, $zipFilePath);
+
+        $this->output->writeln(sprintf('Marketplace package successfully built in "%s"!', $zipFilePath));
+    }
+
+    /**
+     * @param $sourceComposerData
+     * @return array|mixed|string
+     */
+    private function getMagentoRootComponentRelativePath($sourceComposerData)
+    {
+        $componentRelativePath = array_keys((array)$sourceComposerData->autoload->{'psr-4'});
+        $componentRelativePath = str_replace('\\', DIRECTORY_SEPARATOR, $componentRelativePath[0]);
+        $componentRelativePath = 'app' . DIRECTORY_SEPARATOR . 'code' . DIRECTORY_SEPARATOR . $componentRelativePath;
+        return $componentRelativePath;
+    }
+
+    /**
+     * @param $sourcePath
+     * @param $buildDirectory
+     * @param $componentRelativePath
+     * @throws \RuntimeException
+     */
+    private function deployStandaloneComponentDirectory($sourcePath, $buildDirectory, $componentRelativePath)
+    {
+        $componentPath = $buildDirectory . DIRECTORY_SEPARATOR . rtrim($componentRelativePath, DIRECTORY_SEPARATOR);
+        if (!@mkdir($componentPath, 0777, true) && !is_dir($componentPath)) {
+            throw new \RuntimeException(sprintf('Cannot create directory "%s".', $componentPath));
+        }
+        $this->copyDir($sourcePath, $componentPath);
+    }
+
+    /**
+     * @param $sourcePath
+     * @param $destinationZipPath
+     * @param $sourceComposerData
+     * @throws \RuntimeException
+     */
+    private function createStandalonePackage($sourcePath, $destinationZipPath, $sourceComposerData)
+    {
+        $buildDirectory = $this->prepareBuildDirectory();
+        $componentRelativePath = $this->getMagentoRootComponentRelativePath($sourceComposerData);
+        $this->deployStandaloneComponentDirectory($sourcePath, $buildDirectory, $componentRelativePath);
+
+        $packageName = $sourceComposerData->name;
+        $version = $sourceComposerData->version;
+        $zipFilePath = rtrim($destinationZipPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $zipFilePath .= $this->generateZipFilename($packageName, $version, 'standalone');
+        $this->zipDir($buildDirectory, $zipFilePath);
+
+        $this->output->writeln(sprintf('Standalone package successfully built in "%s"!', $zipFilePath));
     }
 }
