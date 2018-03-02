@@ -36,7 +36,7 @@ class Magento2ComponentPackageBuilder
     {
         $this->validateSourcePath($sourcePath);
         $sourcePath = realpath($sourcePath);
-        $sourceComposerData = $this->validateSourceComposerFile($sourceComposerJsonPath, $sourcePath);
+        $sourceComposerData = $this->validateSourceComposerFile($sourceComposerJsonPath);
         $sourceComposerJsonPath = realpath($sourceComposerJsonPath);
         $this->validateDestinationZipPath($destinationZipPath);
         $destinationZipPath = realpath($destinationZipPath);
@@ -154,23 +154,13 @@ USAGE;
      * @return mixed
      * @throws \RuntimeException
      */
-    private function validateSourceComposerFile($sourceComposerJsonPath, $sourcePath)
+    private function validateSourceComposerFile($sourceComposerJsonPath)
     {
         if (null === $composerData = json_decode(file_get_contents($sourceComposerJsonPath))) {
             throw new \RuntimeException(
                 sprintf('Cannot decode source Composer file at path "%s".', $sourceComposerJsonPath)
             );
         }
-        
-        if (!isset($composerData->version)) {
-            $xmlPath = $sourcePath.'/etc/module.xml';
-            $xml = simplexml_load_file($xmlPath);
-
-            if (isset($xml->module['setup_version'])) {
-                $composerData->version = (string)$xml->module['setup_version'];
-            }
-        }
-        
         $requiredProperties = array('name', 'version', 'type', 'license', 'authors', 'autoload');
         foreach ($requiredProperties as $requiredProperty) {
             if (!isset($composerData->{$requiredProperty})) {
