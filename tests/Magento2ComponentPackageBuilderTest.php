@@ -26,6 +26,7 @@ class Magento2ComponentPackageBuilderTest extends \PHPUnit\Framework\TestCase
         $this->builder->build(
             __DIR__ . '/fixtures/awesome-module-repo/src',
             __DIR__ . '/fixtures/awesome-module-repo/composer.json',
+            '1.1.2',
             $this->destinationZipPath
         );
         $packageZipPath = $this->destinationZipPath . '/awesome-module-1.1.2.zip';
@@ -48,6 +49,7 @@ class Magento2ComponentPackageBuilderTest extends \PHPUnit\Framework\TestCase
         $this->builder->build(
             '/invalid/path',
             __DIR__ . '/fixtures/awesome-module-repo/composer.json',
+            '1.1.2',
             $this->destinationZipPath
         );
     }
@@ -61,6 +63,7 @@ class Magento2ComponentPackageBuilderTest extends \PHPUnit\Framework\TestCase
         $this->builder->build(
             __DIR__ . '/fixtures/dir-without-registration-file',
             __DIR__ . '/fixtures/awesome-module-repo/composer.json',
+            '1.1.2',
             $this->destinationZipPath
         );
     }
@@ -74,19 +77,21 @@ class Magento2ComponentPackageBuilderTest extends \PHPUnit\Framework\TestCase
         $this->builder->build(
             __DIR__ . '/fixtures/awesome-module-repo/src',
             __DIR__ . '/fixtures/dir-with-invalid-composer-file/composer.json',
+            '1.1.2',
             $this->destinationZipPath
         );
     }
 
     /**
      * @expectedException \RuntimeException
-     * @expectedExceptionMessageRegExp  /Cannot find required property "version" in source Composer file at path /
+     * @expectedExceptionMessageRegExp  /Cannot find required property "type" in source Composer file at path /
      */
     public function testBuildMarketplacePackageShouldFailIfSourceComposerDoesNotContainRequiredProperty()
     {
         $this->builder->build(
             __DIR__ . '/fixtures/awesome-module-repo/src',
             __DIR__ . '/fixtures/dir-with-incomplete-composer-file/composer.json',
+            '1.1.2',
             $this->destinationZipPath
         );
     }

@@ -30,9 +30,9 @@ if (!$autoloader) {
 require_once $autoloader;
 
 $builder = new Magento2ComponentPackageBuilder(new Output());
-if (empty($argv[1]) || empty($argv[2]) || empty($argv[3])) {
+if (empty($argv[1]) || empty($argv[2]) || empty($argv[3]) || empty($argv[4])) {
     echo $builder->usage();
     exit(1);
 }
 
-exit($builder->build($argv[1], $argv[2], $argv[3]));
+exit($builder->build($argv[1], $argv[2], $argv[3], $argv[4]));

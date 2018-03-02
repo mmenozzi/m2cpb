@@ -1,7 +1,6 @@
 {
     "name": "awesome/module",
     "description": "An awesome module",
-    "type": "magento2-module",
     "license": "proprietary",
     "authors": [
         {

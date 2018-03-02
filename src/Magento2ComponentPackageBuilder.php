@@ -25,14 +25,16 @@ class Magento2ComponentPackageBuilder
      *  Path to the original composer.json file used during development. The following properties must be set: name,
      *  version, type, license, authors and autoload.
      *
-     * @param $destinationZipPath
+     * @param string $version
+     *  The version of the package to build.
+     *
+     * @param string $destinationZipPath
      *  Path to the destination directory of the ZIP package file. The file name of the ZIP package is automatically
      *  generated using the Composer's package name and version.
      *
      * @return int
-     * @throws \RuntimeException
      */
-    public function build($sourcePath, $sourceComposerJsonPath, $destinationZipPath)
+    public function build($sourcePath, $sourceComposerJsonPath, $version, $destinationZipPath)
     {
         $this->validateSourcePath($sourcePath);
         $sourcePath = realpath($sourcePath);
@@ -41,12 +43,11 @@ class Magento2ComponentPackageBuilder
         $this->validateDestinationZipPath($destinationZipPath);
         $destinationZipPath = realpath($destinationZipPath);
         $buildDirectory = $this->prepareBuildDirectory($sourcePath);
-        $destinationComposerData = $this->getDestinationComposerData($sourceComposerData);
+        $destinationComposerData = $this->getDestinationComposerData($sourceComposerData, $version);
         $this->remapAutoload($sourcePath, $sourceComposerJsonPath, $destinationComposerData);
         $this->deployDestinationComposerFile($buildDirectory, $destinationComposerData);
 
         $packageName = $destinationComposerData->name;
-        $version = $destinationComposerData->version;
 
         $zipFilePath = $destinationZipPath . DIRECTORY_SEPARATOR . $this->generateZipFilename($packageName, $version);
         $this->zipDir($buildDirectory, $zipFilePath);
@@ -62,13 +63,16 @@ class Magento2ComponentPackageBuilder
 Magento2 Component Package Builder
 Builds a ZIP package of a Magento2 component (module, theme, language or library).
     
-Usage: m2cpb <src_path> <composer_file_path> <destination_zip_path>
+Usage: m2cpb <src_path> <composer_file_path> <version> <destination_zip_path>
 
     <src_path>              Path to the root directory of the component (the one which contains the registration.php
                             file).
     
     <composer_file_path>    Path to the original composer.json file used during development. The following properties
                             must be set: name, version, type, license, authors and autoload.
+                            
+    <version>               Version to set into destination package. It's intended to be passed from a continuous
+                            integration system which builds a specific branch or tag.
                             
     <destination_zip_path>  Path to the destination directory of the ZIP package file. The file name of the ZIP package
                             is automatically generated using the Composer's package name and version.
@@ -161,7 +165,7 @@ USAGE;
                 sprintf('Cannot decode source Composer file at path "%s".', $sourceComposerJsonPath)
             );
         }
-        $requiredProperties = array('name', 'version', 'type', 'license', 'authors', 'autoload');
+        $requiredProperties = array('name', 'type', 'license', 'authors', 'autoload');
         foreach ($requiredProperties as $requiredProperty) {
             if (!isset($composerData->{$requiredProperty})) {
                 throw new \RuntimeException(
@@ -189,16 +193,17 @@ USAGE;
 
     /**
      * @param $sourceComposerData
+     * @param $version
      * @return stdClass
      */
-    private function getDestinationComposerData($sourceComposerData)
+    private function getDestinationComposerData($sourceComposerData, $version)
     {
         $destinationComposerData = new \stdClass();
         $destinationComposerData->name = $sourceComposerData->name;
         if (isset($sourceComposerData->description)) {
             $destinationComposerData->description = $sourceComposerData->description;
         }
-        $destinationComposerData->version = $sourceComposerData->version;
+        $destinationComposerData->version = $version;
         $destinationComposerData->type = $sourceComposerData->type;
         $destinationComposerData->license = $sourceComposerData->license;
         $destinationComposerData->authors = $sourceComposerData->authors;

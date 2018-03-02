@@ -15,12 +15,13 @@ Usage
 
 Execute the following command:
 
-	vendor/bin/m2cpb <src_path> <composer_file_path> <destination_zip_path>
+	vendor/bin/m2cpb <src_path> <composer_file_path> <version> <destination_zip_path>
 	
 Where:
 
 * `<src_path>`, is the path to the root directory of the component (the one which contains the registration.php file).
 * `<composer_file_path>`, is the path to the original composer.json file used during development. The following properties must be set: name, version, type, license, authors and autoload.
+* `<version>`, version to set into destination package. It's intended to be passed from a continuous integration system which builds a specific branch or tag.
 * `<destination_zip_path>`, is the path to the destination directory of the ZIP package file. The file name of the ZIP package is automatically generated using the Composer's package name and version.
 
 License
