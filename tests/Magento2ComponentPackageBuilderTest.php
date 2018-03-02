@@ -18,46 +18,25 @@ class Magento2ComponentPackageBuilderTest extends \PHPUnit\Framework\TestCase
     protected function tearDown()
     {
         parent::tearDown();
-        @array_map([$this, 'cleanDir'], glob($this->destinationZipPath . '/*'));
+        @array_map('unlink', glob($this->destinationZipPath . '/*'));
     }
 
-    private function cleanDir($target)
-    {
-        if (is_dir($target)) {
-            $target = rtrim($target, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-            $files = glob($target . '*');
-            foreach ($files as $file) {
-                $this->cleanDir($file);
-            }
-            rmdir($target);
-        } elseif (is_file($target)) {
-            unlink($target);
-        }
-    }
-
-    public function testBuildMarketplaceAndStandalonePackages()
+    public function testBuildMarketplacePackage()
     {
         $this->builder->build(
             __DIR__ . '/fixtures/awesome-module-repo/src',
             __DIR__ . '/fixtures/awesome-module-repo/composer.json',
             $this->destinationZipPath
         );
-        $marketplacePackageZipPath = $this->destinationZipPath . '/awesome-module-1.1.2-marketplace.zip';
-        $this->assertFileExists($marketplacePackageZipPath);
+        $packageZipPath = $this->destinationZipPath . '/awesome-module-1.1.2.zip';
+        $this->assertFileExists($packageZipPath);
         $zip = new \ZipArchive();
-        $zip->open($marketplacePackageZipPath);
+        $zip->open($packageZipPath);
         $zip->extractTo($this->destinationZipPath);
         $this->assertFileExists($this->destinationZipPath . '/composer.json');
         $this->assertFileExists($this->destinationZipPath . '/registration.php');
         $composerData = json_decode($this->destinationZipPath . '/composer.json', true);
         $this->assertEmpty($composerData['autoload']['psr-4']['Awesome\\Module\\']);
-
-        $standalonePackageZipPath = $this->destinationZipPath . '/awesome-module-1.1.2-standalone.zip';
-        $this->assertFileExists($standalonePackageZipPath);
-        $zip = new \ZipArchive();
-        $zip->open($standalonePackageZipPath);
-        $zip->extractTo($this->destinationZipPath);
-        $this->assertFileExists($this->destinationZipPath . '/app/code/Awesome/Module/registration.php');
     }
 
     /**
